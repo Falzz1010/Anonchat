@@ -362,7 +362,7 @@ function Monitoring() {
                   <h3 className={`text-base sm:text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-black'}`}>
                     Fitur Utama:
                   </h3>
-                  <ul className="list-disc list-inside space-y-1.5 text-sm sm:text-base">
+                  <ul className="list-disc list-inside space-y-1.5 text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}">
                     <li>Chat anonim tanpa registrasi</li>
                     <li>Sistem tag untuk kategorisasi pesan</li>
                     <li>Dukungan emoji dan reaksi</li>
