@@ -9,7 +9,7 @@ import PopularTags from './components/PopularTags';
 import { useTheme } from './contexts/ThemeContext';
 import { MessageProvider } from './contexts/MessageContext';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
-import Monitoring from './pages/Monitoring';
+import Monitoring from './pages/monitoring';
 
 function App() {
   const { darkMode, toggleDarkMode } = useTheme();
