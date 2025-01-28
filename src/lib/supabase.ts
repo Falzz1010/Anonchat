@@ -70,10 +70,7 @@ console.log('Environment Variables:', {
 });
 
 if (!supabaseUrl || !supabaseAnonKey) {
-  throw new Error(
-    'Missing environment variables for Supabase configuration.\n' +
-    'Please ensure you have VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY set in your .env.local file.'
-  );
+  throw new Error('Missing Supabase environment variables');
 }
 
 // Buat client Supabase dengan type safety
@@ -136,7 +133,7 @@ export const supabaseHelper = {
       const existingReaction = reactions.find(r => r.emoji === emoji);
 
       const updatedReactions = existingReaction
-        ? reactions.map(r => 
+        ? reactions.map((r: { emoji: string; count: number }) => 
             r.emoji === emoji 
               ? { ...r, count: r.count + 1 }
               : r

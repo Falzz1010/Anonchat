@@ -1,13 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Users, MessageSquare, TrendingUp, Clock, ArrowLeft, Info, X } from 'lucide-react';
+import { Activity, Users, MessageSquare, TrendingUp, Clock, ArrowLeft, Info, X, LayoutGrid, List } from 'lucide-react';
 import { useMessage } from '../contexts/MessageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
+
 function Monitoring() {
   const { darkMode } = useTheme();
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
     totalMessages: 0,
     totalUsers: 0,
@@ -15,15 +18,25 @@ function Monitoring() {
     messagesPerHour: '0'
   });
   const [recentMessages, setRecentMessages] = useState<any[]>([]);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   
   // Fetch and update all data
   const fetchData = async () => {
     try {
-      // Fetch all messages
-      const { data: allMessages } = await supabase
+      setLoading(true);
+      setError(null);
+      
+      // Add minimum loading time of 1 second
+      const startTime = Date.now();
+      
+      const { data: allMessages, error: supabaseError } = await supabase
         .from('messages')
         .select('*')
         .order('timestamp', { ascending: false });
+
+      if (supabaseError) {
+        throw new Error(supabaseError.message);
+      }
 
       if (allMessages) {
         // Calculate total messages
@@ -45,6 +58,12 @@ function Monitoring() {
         );
         const messagesPerHour = (recent24h.length / 24).toFixed(1);
 
+        // Ensure minimum loading time of 1 second
+        const elapsedTime = Date.now() - startTime;
+        if (elapsedTime < 1000) {
+          await new Promise(resolve => setTimeout(resolve, 1000 - elapsedTime));
+        }
+
         // Update stats
         setStats({
           totalMessages,
@@ -55,9 +74,20 @@ function Monitoring() {
 
         // Update recent messages
         setRecentMessages(allMessages.slice(0, 5));
+      } else {
+        setStats({
+          totalMessages: 0,
+          totalUsers: 0,
+          totalTags: 0,
+          messagesPerHour: '0'
+        });
+        setRecentMessages([]);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
+      setError(error instanceof Error ? error.message : 'An error occurred while fetching data');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -148,21 +178,104 @@ function Monitoring() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {statCards.map((stat) => (
-            <div key={stat.label} className="brutal-card">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
-                  <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>
-                    {stat.value}
-                  </p>
-                </div>
-                <stat.icon className={`w-8 h-8 ${stat.color}`} />
-              </div>
-            </div>
-          ))}
+        {error && (
+          <div className="mb-8 brutal-card bg-red-100 dark:bg-red-900">
+            <p className="text-red-700 dark:text-red-100">
+              Error: {error}
+            </p>
+          </div>
+        )}
+
+        {/* View Mode Toggle */}
+        <div className="flex justify-end mb-6">
+          <div className="brutal-card inline-flex p-1 gap-1">
+            <button
+              onClick={() => setViewMode('grid')}
+              className={`brutal-button p-2 ${
+                viewMode === 'grid' 
+                  ? 'bg-[#ff5757] text-white' 
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setViewMode('list')}
+              className={`brutal-button p-2 ${
+                viewMode === 'list' 
+                  ? 'bg-[#ff5757] text-white' 
+                  : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+              }`}
+              aria-label="List view"
+            >
+              <List className="w-5 h-5" />
+            </button>
+          </div>
         </div>
+
+        {/* Stats Display */}
+        {viewMode === 'grid' ? (
+          // Grid View
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {loading ? (
+              Array(4).fill(0).map((_, index) => (
+                <div key={index} className="brutal-card animate-pulse">
+                  <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded" />
+                </div>
+              ))
+            ) : (
+              statCards.map((stat) => (
+                <div key={stat.label} className="brutal-card">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
+                      <p className={`text-3xl font-bold mt-2 ${darkMode ? 'text-white' : 'text-black'}`}>
+                        {stat.value}
+                      </p>
+                    </div>
+                    <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          // List View
+          <div className="space-y-4">
+            {loading ? (
+              Array(4).fill(0).map((_, index) => (
+                <div key={index} className="animate-pulse flex items-start gap-4 p-4">
+                  <div className="w-2 h-2 mt-2 rounded-full bg-gray-200 dark:bg-gray-700" />
+                  <div className="flex-1">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2" />
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                  </div>
+                </div>
+              ))
+            ) : (
+              statCards.map((stat) => (
+                <div key={stat.label} className="brutal-card">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                      <div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{stat.label}</p>
+                        <p className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
+                          {stat.value}
+                        </p>
+                      </div>
+                    </div>
+                    <div className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                      Last updated: {new Date().toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
 
         {/* Activity Timeline */}
         <div className="mt-12">
@@ -170,63 +283,86 @@ function Monitoring() {
             Recent Activity
           </h2>
           <div className="brutal-card">
-            <div className="space-y-4">
-              {recentMessages.map((message) => (
-                <div 
-                  key={message.id} 
-                  className={`flex items-start gap-4 p-4 rounded-lg ${
-                    darkMode ? 'bg-brutal-dark' : 'bg-gray-50'
-                  }`}
-                >
-                  <div className="w-2 h-2 mt-2 rounded-full bg-[#ff5757]" />
-                  <div>
-                    <p className={`font-medium ${darkMode ? 'text-white' : 'text-black'}`}>
-                      {message.username}
-                    </p>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {new Date(message.timestamp).toLocaleString()}
-                    </p>
-                    <p className={`mt-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                      {message.content.slice(0, 100)}
-                      {message.content.length > 100 && '...'}
-                    </p>
+            {loading ? (
+              // Loading skeleton for recent messages
+              <div className="space-y-4">
+                {Array(3).fill(0).map((_, index) => (
+                  <div key={index} className="animate-pulse flex items-start gap-4 p-4">
+                    <div className="w-2 h-2 mt-2 rounded-full bg-gray-200 dark:bg-gray-700" />
+                    <div className="flex-1">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2" />
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
+                      <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {recentMessages.map((message) => (
+                  <div 
+                    key={message.id} 
+                    className={`flex items-start gap-4 p-4 rounded-lg ${
+                      darkMode ? 'bg-brutal-dark' : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className="w-2 h-2 mt-2 rounded-full bg-[#ff5757]" />
+                    <div>
+                      <p className={`font-medium ${darkMode ? 'text-white' : 'text-black'}`}>
+                        {message.username}
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {new Date(message.timestamp).toLocaleString()}
+                      </p>
+                      <p className={`mt-1 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                        {message.content.slice(0, 100)}
+                        {message.content.length > 100 && '...'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         {/* About Modal */}
         {showAboutModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className={`brutal-card max-w-lg w-full ${darkMode ? 'bg-[#2a2a2a]' : 'bg-white'}`}>
-              {/* Modal Header */}
-              <div className="flex justify-between items-center mb-6">
-                <h2 className={`text-2xl font-bold flex items-center gap-2 ${darkMode ? 'text-white' : 'text-black'}`}>
-                  <MessageSquare className="w-6 h-6 text-[#ff5757]" />
-                  About Chat Anonim
-                </h2>
-                <button
-                  onClick={() => setShowAboutModal(false)}
-                  className="brutal-button p-2"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
+            <div className={`brutal-card max-w-lg w-full mx-4 sm:mx-auto relative ${darkMode ? 'bg-[#2a2a2a]' : 'bg-white'}`}>
+              {/* Close button */}
+              <button
+                onClick={() => setShowAboutModal(false)}
+                className="brutal-button p-1.5 sm:p-2 absolute top-4 right-4"
+                aria-label="Close modal"
+              >
+                <X className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
 
               {/* Modal Content */}
-              <div className={`space-y-4 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                <p>
-                  Chat Anonim adalah platform chat anonim yang memungkinkan pengguna untuk berkomunikasi 
-                  secara bebas tanpa perlu mengungkapkan identitas mereka.
-                </p>
+              <div className="space-y-6">
+                {/* Header */}
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-5 h-5 sm:w-6 sm:h-6 text-[#ff5757]" />
+                  <h2 className={`text-xl sm:text-2xl font-bold ${darkMode ? 'text-white' : 'text-black'}`}>
+                    About Chat Anonim
+                  </h2>
+                </div>
 
-                <div className="border-t-2 border-black pt-4">
-                  <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-black'}`}>
+                {/* Description */}
+                <div className={`text-sm sm:text-base ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                  <p className="leading-relaxed">
+                    Chat Anonim adalah platform chat anonim yang memungkinkan pengguna untuk berkomunikasi 
+                    secara bebas tanpa perlu mengungkapkan identitas mereka.
+                  </p>
+                </div>
+
+                {/* Features Section */}
+                <div className="border-t-2 border-black/10 dark:border-white/10 pt-4">
+                  <h3 className={`text-base sm:text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-black'}`}>
                     Fitur Utama:
                   </h3>
-                  <ul className="list-disc list-inside space-y-2">
+                  <ul className="list-disc list-inside space-y-1.5 text-sm sm:text-base">
                     <li>Chat anonim tanpa registrasi</li>
                     <li>Sistem tag untuk kategorisasi pesan</li>
                     <li>Dukungan emoji dan reaksi</li>
@@ -235,40 +371,33 @@ function Monitoring() {
                   </ul>
                 </div>
 
-                <div className="border-t-2 border-black pt-4">
-                  <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-black'}`}>
+                {/* Creator Section */}
+                <div className="border-t-2 border-black/10 dark:border-white/10 pt-4">
+                  <h3 className={`text-base sm:text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-black'}`}>
                     Dibuat Oleh:
                   </h3>
-                  <div className="flex items-center gap-4">
-                    <div className={`p-4 brutal-card ${darkMode ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
-                      <p className="font-bold">Naufal Rizky </p>
-                      <p className="text-sm opacity-75">Front End Developer</p>
-                    </div>
+                  <div className={`p-3 sm:p-4 brutal-card inline-block ${darkMode ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
+                    <p className="font-bold text-sm sm:text-base">Naufal Rizky</p>
+                    <p className="text-xs sm:text-sm opacity-75">Front End Developer</p>
                   </div>
                 </div>
 
-                <div className="border-t-2 border-black pt-4">
-                  <h3 className={`text-lg font-bold mb-2 ${darkMode ? 'text-white' : 'text-black'}`}>
+                {/* Technologies Section */}
+                <div className="border-t-2 border-black/10 dark:border-white/10 pt-4">
+                  <h3 className={`text-base sm:text-lg font-bold mb-3 ${darkMode ? 'text-white' : 'text-black'}`}>
                     Teknologi:
                   </h3>
                   <div className="flex flex-wrap gap-2">
                     {['React', 'TypeScript', 'Tailwind CSS', 'Supabase'].map((tech) => (
-                      <span key={tech} className="brutal-button text-sm">
+                      <span 
+                        key={tech} 
+                        className="brutal-button text-xs sm:text-sm py-1.5 px-3"
+                      >
                         {tech}
                       </span>
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* Modal Footer */}
-              <div className="mt-6 pt-4 border-t-2 border-black flex justify-end">
-                <button
-                  onClick={() => setShowAboutModal(false)}
-                  className="brutal-button bg-[#ff5757] text-white"
-                >
-                  Close
-                </button>
               </div>
             </div>
           </div>
@@ -279,3 +408,4 @@ function Monitoring() {
 }
 
 export default Monitoring;
+

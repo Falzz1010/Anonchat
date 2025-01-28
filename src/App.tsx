@@ -8,7 +8,7 @@ import Footer from './components/Footer';
 import PopularTags from './components/PopularTags';
 import { useTheme } from './contexts/ThemeContext';
 import { MessageProvider } from './contexts/MessageContext';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Monitoring from './pages/Monitoring';
 
 function App() {
@@ -18,7 +18,7 @@ function App() {
   const [showSidebar, setShowSidebar] = useState(false);
 
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
         <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/" element={
@@ -27,8 +27,8 @@ function App() {
               <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
                 
-                {/* Update the Monitoring Link */}
-                <div className="flex justify-end mb-4">
+                {/* Move monitoring button below header */}
+                <div className="flex items-center gap-2 mb-4">
                   <Link
                     to="/monitoring"
                     className="brutal-button p-2"
@@ -37,7 +37,7 @@ function App() {
                     <Activity className="w-5 h-5" />
                   </Link>
                 </div>
-                
+
                 <div className="flex gap-8 py-8 relative">
                   {/* Sidebar - Update positioning and width */}
                   <div className={`
@@ -130,7 +130,7 @@ function App() {
           </MessageProvider>
         } />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
 
