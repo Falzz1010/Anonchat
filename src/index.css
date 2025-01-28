@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .shadow-brutal {
+    box-shadow: 4px 4px 0px 0px rgba(0, 0, 0, 1);
+  }
+
+  .shadow-brutal-white {
+    box-shadow: 4px 4px 0px 0px rgba(255, 255, 255, 0.1);
+  }
+
+  .shadow-brutal-sm {
+    box-shadow: 2px 2px 0px 0px rgba(0, 0, 0, 1);
+  }
+
+  .shadow-brutal-white-sm {
+    box-shadow: 2px 2px 0px 0px rgba(255, 255, 255, 0.1);
+  }
+}
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .shadow-brutal {
+    @apply transition-all duration-200;
+    box-shadow: 4px 4px 0 0 theme('colors.black');
+  }
+  
+  .dark .shadow-brutal {
+    box-shadow: 4px 4px 0 0 theme('colors.white');
+  }
+
+  .shadow-brutal:hover {
+    @apply translate-x-0.5 translate-y-0.5;
+    box-shadow: 2px 2px 0 0 currentColor;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 bg-[#ff5757] text-white border-4 border-black shadow-brutal 
+           hover:translate-x-1 hover:translate-y-1 transition-transform font-bold;
+  }
+
+  .input-brutal {
+    @apply w-full p-3 border-4 border-black focus:outline-none focus:ring-2 
+           focus:ring-[#ff5757] focus:ring-offset-2 transition-all duration-200;
+  }
+
+  .card-brutal {
+    @apply p-6 border-4 border-black shadow-brutal transition-all duration-200
+           hover:translate-x-0.5 hover:translate-y-0.5;
+  }
+
+  .brutal-border {
+    @apply border-2 border-black dark:border-gray-700;
+  }
+
+  .brutal-bg {
+    @apply bg-brutal-white dark:bg-brutal-gray;
+  }
+
+  .brutal-hover {
+    @apply hover:translate-x-[2px] hover:translate-y-[2px] 
+           hover:shadow-brutal-sm dark:hover:shadow-brutal-white-sm;
+  }
+
+  .brutal-active {
+    @apply active:translate-x-1 active:translate-y-1;
+  }
+
+  .brutal-button {
+    @apply bg-gray-100 dark:bg-brutal-dark
+           text-gray-700 dark:text-gray-300
+           brutal-border
+           shadow-brutal dark:shadow-brutal-white
+           brutal-hover
+           px-4 py-2 rounded-xl
+           font-bold transition-all duration-200;
+  }
+
+  .brutal-input {
+    @apply bg-white dark:bg-brutal-gray
+           text-gray-900 dark:text-white
+           brutal-border
+           shadow-brutal dark:shadow-brutal-white
+           focus:shadow-brutal-sm dark:focus:shadow-brutal-white-sm
+           focus:translate-x-[2px] focus:translate-y-[2px]
+           px-4 py-2 rounded-lg
+           outline-none transition-all duration-200;
+  }
+
+  .brutal-card {
+    @apply bg-white dark:bg-brutal-gray
+           brutal-border
+           shadow-brutal dark:shadow-brutal-white
+           brutal-hover
+           p-6 rounded-lg;
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
