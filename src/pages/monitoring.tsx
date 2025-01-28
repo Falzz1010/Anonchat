@@ -377,8 +377,8 @@ function Monitoring() {
                     Dibuat Oleh:
                   </h3>
                   <div className={`p-3 sm:p-4 brutal-card inline-block ${darkMode ? 'bg-[#1a1a1a]' : 'bg-gray-50'}`}>
-                    <p className="font-bold text-sm sm:text-base">Naufal Rizky</p>
-                    <p className="text-xs sm:text-sm opacity-75">Front End Developer</p>
+                     <p className={`font-bold text-sm sm:text-base ${darkMode ? 'text-white' : 'text-black'}`}>Naufal Rizky</p>
+                    <p className={`text-xs sm:text-sm opacity-75 ${darkMode ? 'text-gray-300' : 'text-gray-600'}`}>Front End Developer</p>
                   </div>
                 </div>
 
