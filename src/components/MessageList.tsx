@@ -19,9 +19,10 @@ interface MessageListProps {
   darkMode: boolean;
   searchQuery: string;
   selectedTag: string;
+  sortBy: 'popular' | 'newest' | 'oldest';
 }
 
-function MessageList({ darkMode, searchQuery, selectedTag }: MessageListProps) {
+function MessageList({ darkMode, searchQuery, selectedTag, sortBy }: MessageListProps) {
   const { messages, isLoading } = useMessage();
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,7 +35,18 @@ function MessageList({ darkMode, searchQuery, selectedTag }: MessageListProps) {
       const matchesTag = selectedTag ? message.tags.includes(selectedTag) : true;
       return matchesSearch && matchesTag;
     })
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'popular':
+          return b.likes - a.likes;
+        case 'newest':
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        case 'oldest':
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        default:
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+      }
+    });
 
   // Calculate pagination
   const indexOfLastMessage = currentPage * messagesPerPage;
