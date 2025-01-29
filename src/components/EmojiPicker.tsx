@@ -28,14 +28,14 @@ function EmojiPicker({ onEmojiSelect }: EmojiPickerProps) {
       </button>
 
       {isOpen && (
-        <div className="brutal-card absolute bottom-full mb-2 right-0 w-[320px] z-50">
+        <div className="brutal-card absolute bottom-full mb-2 right-0 w-[280px] sm:w-[320px] z-50">
           {/* Category Tabs */}
-          <div className="flex gap-1 mb-2 border-b border-black/10 pb-2">
+          <div className="flex gap-0.5 sm:gap-1 mb-2 border-b border-black/10 pb-2">
             {Object.keys(EMOJI_CATEGORIES).map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category as keyof typeof EMOJI_CATEGORIES)}
-                className={`p-2 rounded-lg text-sm ${
+                className={`p-1.5 sm:p-2 rounded-lg text-sm ${
                   activeCategory === category ? 'bg-gray-100 dark:bg-brutal-gray' : ''
                 }`}
               >
@@ -45,7 +45,7 @@ function EmojiPicker({ onEmojiSelect }: EmojiPickerProps) {
           </div>
 
           {/* Emoji Grid */}
-          <div className="grid grid-cols-8 gap-1">
+          <div className="grid grid-cols-6 sm:grid-cols-8 gap-1">
             {EMOJI_CATEGORIES[activeCategory].map((emoji) => (
               <button
                 key={emoji}
@@ -53,7 +53,7 @@ function EmojiPicker({ onEmojiSelect }: EmojiPickerProps) {
                   onEmojiSelect(emoji);
                   setIsOpen(false);
                 }}
-                className="p-1.5 hover:bg-gray-100 dark:hover:bg-brutal-gray rounded text-xl"
+                className="p-1 sm:p-1.5 hover:bg-gray-100 dark:hover:bg-brutal-gray rounded text-lg sm:text-xl"
               >
                 {emoji}
               </button>
