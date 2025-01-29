@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 interface Particle {
   x: number;
@@ -17,8 +17,24 @@ const CursorTrail: React.FC = () => {
   const trailAge = 180;
   const hueRef = useRef(0);
   const mousePos = useRef({ x: 0, y: 0 });
+  const [isDesktop, setIsDesktop] = useState(window.innerWidth > 768);
 
   useEffect(() => {
+    // Handle resize untuk mengecek device
+    const handleResize = () => {
+      setIsDesktop(window.innerWidth > 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Check initial size
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    // Hanya jalankan animasi jika di desktop
+    if (!isDesktop) return;
+    
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -239,7 +255,10 @@ const CursorTrail: React.FC = () => {
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('resize', updateCanvasSize);
     };
-  }, []);
+  }, [isDesktop]);
+
+  // Jangan render canvas sama sekali di mobile
+  if (!isDesktop) return null;
 
   return (
     <canvas
@@ -249,7 +268,8 @@ const CursorTrail: React.FC = () => {
         top: 0,
         left: 0,
         pointerEvents: 'none',
-        zIndex: 0
+        zIndex: 0,
+        display: isDesktop ? 'block' : 'none' // Extra safety dengan CSS
       }}
     />
   );
