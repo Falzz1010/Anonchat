@@ -10,6 +10,7 @@ import { useTheme } from './contexts/ThemeContext';
 import { MessageProvider } from './contexts/MessageContext';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Monitoring from './pages/monitoring';
+import CursorTrail from './components/CursorTrail';
 
 type SortOption = 'popular' | 'newest' | 'oldest';
 
@@ -27,6 +28,7 @@ function App() {
         <Route path="/" element={
           <MessageProvider>
             <div className={`min-h-screen overflow-x-hidden ${darkMode ? 'dark bg-[#1a1a1a]' : 'bg-[#ffde59]'}`}>
+              {darkMode && <CursorTrail />}
               <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 w-full">
                 <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
                 
