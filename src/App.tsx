@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MessageSquare, Sun, Moon, Search, TrendingUp, Activity } from 'lucide-react';
+import { MessageSquare, Sun, Moon, Search, TrendingUp, Activity, Clock, History } from 'lucide-react';
 import MessageList from './components/MessageList';
 import MessageInput from './components/MessageInput';
 import Sidebar from './components/Sidebar';
@@ -11,11 +11,14 @@ import { MessageProvider } from './contexts/MessageContext';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';
 import Monitoring from './pages/monitoring';
 
+type SortOption = 'popular' | 'newest' | 'oldest';
+
 function App() {
   const { darkMode, toggleDarkMode } = useTheme();
   const [selectedTag, setSelectedTag] = React.useState('');
   const [searchQuery, setSearchQuery] = React.useState('');
   const [showSidebar, setShowSidebar] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('newest');
 
   return (
     <BrowserRouter>
@@ -77,19 +80,65 @@ function App() {
 
                     {/* Search Bar */}
                     <div className="my-8">
-                      <div className={`flex items-center gap-3 p-4 ${
+                      <div className={`flex flex-col sm:flex-row items-center gap-3 p-4 ${
                         darkMode ? 'bg-[#2a2a2a]' : 'bg-white'
                       } border-4 border-black shadow-brutal rounded-xl`}>
-                        <Search className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-black'}`} />
-                        <input
-                          type="text"
-                          placeholder="Cari pesan..."
-                          className={`w-full bg-transparent focus:outline-none text-lg ${
-                            darkMode ? 'placeholder-gray-500 text-white' : 'placeholder-gray-400 text-black'
-                          }`}
-                          value={searchQuery}
-                          onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        {/* Search Section */}
+                        <div className="flex items-center gap-3 flex-1 w-full">
+                          <Search className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-black'}`} />
+                          <input
+                            type="text"
+                            placeholder="Cari pesan..."
+                            className={`w-full bg-transparent focus:outline-none text-lg ${
+                              darkMode ? 'placeholder-gray-500 text-white' : 'placeholder-gray-400 text-black'
+                            }`}
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Divider */}
+                        <div className={`hidden sm:block h-8 w-px ${darkMode ? 'bg-gray-700' : 'bg-gray-300'}`}></div>
+
+                        {/* Sort Controls */}
+                        <div className="flex items-center gap-2 w-full sm:w-auto mt-3 sm:mt-0">
+                          <span className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Urutkan:</span>
+                          <div className="flex gap-1 flex-1 sm:flex-initial">
+                            <button
+                              onClick={() => setSortBy('popular')}
+                              className={`flex-1 sm:flex-initial brutal-button px-3 py-1.5 rounded-lg flex items-center justify-center gap-1 text-sm ${
+                                sortBy === 'popular'
+                                  ? 'bg-[#ff5757] text-white'
+                                  : darkMode ? 'text-white hover:bg-gray-800' : 'hover:bg-gray-100'
+                              }`}
+                            >
+                              <TrendingUp className="w-4 h-4" />
+                              <span className="hidden sm:inline">Populer</span>
+                            </button>
+                            <button
+                              onClick={() => setSortBy('newest')}
+                              className={`flex-1 sm:flex-initial brutal-button px-3 py-1.5 rounded-lg flex items-center justify-center gap-1 text-sm ${
+                                sortBy === 'newest'
+                                  ? 'bg-[#ff5757] text-white'
+                                  : darkMode ? 'text-white hover:bg-gray-800' : 'hover:bg-gray-100'
+                              }`}
+                            >
+                              <Clock className="w-4 h-4" />
+                              <span className="hidden sm:inline">Terbaru</span>
+                            </button>
+                            <button
+                              onClick={() => setSortBy('oldest')}
+                              className={`flex-1 sm:flex-initial brutal-button px-3 py-1.5 rounded-lg flex items-center justify-center gap-1 text-sm ${
+                                sortBy === 'oldest'
+                                  ? 'bg-[#ff5757] text-white'
+                                  : darkMode ? 'text-white hover:bg-gray-800' : 'hover:bg-gray-100'
+                              }`}
+                            >
+                              <History className="w-4 h-4" />
+                              <span className="hidden sm:inline">Terlama</span>
+                            </button>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
@@ -120,6 +169,7 @@ function App() {
                       darkMode={darkMode} 
                       searchQuery={searchQuery} 
                       selectedTag={selectedTag} 
+                      sortBy={sortBy}
                     />
                   </div>
                 </div>
