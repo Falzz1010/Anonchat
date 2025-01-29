@@ -27,14 +27,27 @@ function MessageList({ darkMode, searchQuery, selectedTag }: MessageListProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const messagesPerPage = 10; // Number of messages to show per page
-  
+
   const filteredMessages = messages
     .filter(message => {
-      const matchesSearch = message.content.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = message.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          message.username.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesTag = selectedTag ? message.tags.includes(selectedTag) : true;
       return matchesSearch && matchesTag;
     })
-    .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'popular':
+          return b.likes - a.likes;
+        case 'newest':
+          return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
+        case 'oldest':
+          return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+        default:
+          return 0;
+      }
+    });
+  
 
   // Calculate pagination
   const indexOfLastMessage = currentPage * messagesPerPage;
