@@ -87,7 +87,7 @@ function MessageList({ darkMode, searchQuery, selectedTag, sortBy }: MessageList
   };
 
   return (
-    <div>
+    <div className="w-full overflow-x-hidden">
       {/* View Mode Toggle - Hidden on mobile */}
       <div className="hidden sm:flex justify-end mb-6">
         <div className="brutal-card inline-flex p-1 gap-1">
@@ -117,10 +117,10 @@ function MessageList({ darkMode, searchQuery, selectedTag, sortBy }: MessageList
       </div>
 
       {/* Messages */}
-      <div className={`${
+      <div className={`w-full overflow-x-hidden ${
         viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 gap-6' 
-          : 'space-y-6'
+          ? 'grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6' 
+          : 'space-y-4 sm:space-y-6'
       }`}>
         {loading ? (
           // Loading skeletons
@@ -136,7 +136,7 @@ function MessageList({ darkMode, searchQuery, selectedTag, sortBy }: MessageList
 
       {/* Enhanced Pagination Controls */}
       {totalPages > 1 && (
-        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8">
+        <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mt-8 w-full overflow-x-hidden">
           {/* Mobile Page Indicator */}
           <div className="sm:hidden flex items-center gap-3">
             <select
