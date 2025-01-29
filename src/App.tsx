@@ -78,7 +78,7 @@ function App() {
                     <MessageInput darkMode={darkMode} />
 
                     {/* Search Bar */}
-                   <div className="my-8 w-full overflow-x-hidden">
+                   <div className="my-8 w-full [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none'] overflow-x-hidden">
                       <div className={`flex flex-col sm:flex-row items-center gap-3 p-4 ${
                         darkMode ? 'bg-[#2a2a2a]' : 'bg-white'
                        } border-4 border-black shadow-brutal rounded-xl w-full`}>
