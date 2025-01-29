@@ -26,8 +26,8 @@ function App() {
         <Route path="/monitoring" element={<Monitoring />} />
         <Route path="/" element={
           <MessageProvider>
-            <div className={`min-h-screen ${darkMode ? 'dark bg-[#1a1a1a]' : 'bg-[#ffde59]'}`}>
-              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className={`min-h-screen overflow-x-hidden ${darkMode ? 'dark bg-[#1a1a1a]' : 'bg-[#ffde59]'}`}>
+              <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8 py-6 w-full">
                 <Header darkMode={darkMode} toggleDarkMode={toggleDarkMode} />
                 
                 {/* Move monitoring button below header */}
@@ -41,7 +41,7 @@ function App() {
                   </Link>
                 </div>
 
-                <div className="flex gap-8 py-8 relative">
+                <div className="flex gap-4 sm:gap-8 py-8 relative w-full overflow-x-hidden">
                   {/* Sidebar - Update positioning and width */}
                   <div className={`
                     ${showSidebar ? 'block' : 'hidden'} 
@@ -73,16 +73,15 @@ function App() {
                     </div>
                   </div>
 
-                  {/* Main Content */}
-                  <div className="flex-1">
-                    {/* Message Input - Moved to top */}
+                  
+                 <div className="flex-1 w-full overflow-x-hidden">
                     <MessageInput darkMode={darkMode} />
 
                     {/* Search Bar */}
-                    <div className="my-8">
+                   <div className="my-8 w-full overflow-x-hidden">
                       <div className={`flex flex-col sm:flex-row items-center gap-3 p-4 ${
                         darkMode ? 'bg-[#2a2a2a]' : 'bg-white'
-                      } border-4 border-black shadow-brutal rounded-xl`}>
+                       } border-4 border-black shadow-brutal rounded-xl w-full`}>
                         {/* Search Section */}
                         <div className="flex items-center gap-3 flex-1 w-full">
                           <Search className={`w-6 h-6 ${darkMode ? 'text-white' : 'text-black'}`} />
