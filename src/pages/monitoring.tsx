@@ -146,10 +146,10 @@ function Monitoring() {
   ];
 
   return (
-    <div className={`min-h-screen ${darkMode ? 'dark bg-[#1a1a1a]' : 'bg-[#ffde59]'}`}>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className={`min-h-screen overflow-x-hidden ${darkMode ? 'dark bg-[#1a1a1a]' : 'bg-[#ffde59]'}`}>
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Navigation Buttons */}
-        <div className="flex items-center gap-4 mb-8">
+       <div className="flex flex-wrap items-center gap-4 mb-8">
           <Link
             to="/"
             className="brutal-button inline-flex items-center gap-2"
@@ -328,8 +328,8 @@ function Monitoring() {
 
         {/* About Modal */}
         {showAboutModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 overflow-y-auto">
-            <div className={`brutal-card max-w-lg w-full mx-4 sm:mx-auto relative ${darkMode ? 'bg-[#2a2a2a]' : 'bg-white'}`}>
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+            <div className={`brutal-card w-full max-w-lg relative ${darkMode ? 'bg-[#2a2a2a]' : 'bg-white'}`}>
               {/* Close button */}
               <button
                 onClick={() => setShowAboutModal(false)}
