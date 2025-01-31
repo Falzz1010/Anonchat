@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Users, MessageSquare, TrendingUp, Clock, ArrowLeft, Info, X, LayoutGrid, List } from 'lucide-react';
+import { Activity, Users, MessageSquare, TrendingUp, Clock, ArrowLeft, Info, X, LayoutGrid, List, RefreshCw, Zap, MessageCircle, Users2, Hash } from 'lucide-react';
 import { useMessage } from '../contexts/MessageContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
@@ -19,19 +19,63 @@ function Monitoring() {
   });
   const [recentMessages, setRecentMessages] = useState<any[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [timeRange, setTimeRange] = useState('24h');
+  const [refreshInterval, setRefreshInterval] = useState<number>(30);
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [showRefreshProgress, setShowRefreshProgress] = useState(false);
+  const [advancedStats, setAdvancedStats] = useState({
+    peakHour: '00:00',
+    averageMessageLength: 0,
+    topTags: [],
+    userRetention: 0,
+    activeUsers24h: 0,
+    messageDistribution: {
+      morning: 0,
+      afternoon: 0,
+      evening: 0,
+      night: 0
+    }
+  });
+  const [timeSeriesData, setTimeSeriesData] = useState([]);
+  const [showAdvancedStats, setShowAdvancedStats] = useState(false);
+  const [selectedMetric, setSelectedMetric] = useState<'messages' | 'users' | 'tags'>('messages');
   
-  // Fetch and update all data
+  // Add time range options
+  const timeRangeOptions = [
+    { value: '1h', label: 'Last Hour' },
+    { value: '24h', label: '24 Hours' },
+    { value: '7d', label: '7 Days' },
+    { value: '30d', label: '30 Days' },
+  ];
+
+  // Modify fetchData to properly handle time ranges
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
       
-      // Add minimum loading time of 1 second
-      const startTime = Date.now();
-      
+      // Calculate time range
+      const now = new Date();
+      let startTime = new Date();
+      switch (timeRange) {
+        case '1h':
+          startTime.setHours(startTime.getHours() - 1);
+          break;
+        case '7d':
+          startTime.setDate(startTime.getDate() - 7);
+          break;
+        case '30d':
+          startTime.setDate(startTime.getDate() - 30);
+          break;
+        default: // 24h
+          startTime.setDate(startTime.getDate() - 1);
+      }
+
+      // Fetch messages within the selected time range
       const { data: allMessages, error: supabaseError } = await supabase
         .from('messages')
         .select('*')
+        .gte('timestamp', startTime.toISOString())
         .order('timestamp', { ascending: false });
 
       if (supabaseError) {
@@ -42,27 +86,19 @@ function Monitoring() {
         // Calculate total messages
         const totalMessages = allMessages.length;
 
-        // Calculate unique users (based on username)
+        // Calculate unique users
         const uniqueUsers = new Set(allMessages.map(msg => msg.username));
         const totalUsers = uniqueUsers.size;
 
-        // Calculate unique tags (flatten all tags arrays and get unique values)
+        // Calculate unique tags
         const allTags = allMessages.flatMap(msg => msg.tags || []);
-        const uniqueTags = new Set(allTags.filter(tag => tag)); // Filter out null/empty tags
+        const uniqueTags = new Set(allTags.filter(tag => tag));
         const totalTags = uniqueTags.size;
         
-        // Calculate messages per hour (last 24 hours)
-        const last24Hours = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const recent24h = allMessages.filter(msg => 
-          new Date(msg.timestamp) > last24Hours
-        );
-        const messagesPerHour = (recent24h.length / 24).toFixed(1);
-
-        // Ensure minimum loading time of 1 second
-        const elapsedTime = Date.now() - startTime;
-        if (elapsedTime < 1000) {
-          await new Promise(resolve => setTimeout(resolve, 1000 - elapsedTime));
-        }
+        // Calculate messages per hour based on the selected time range
+        let messagesPerHour;
+        const hoursDiff = (now.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+        messagesPerHour = (allMessages.length / hoursDiff).toFixed(1);
 
         // Update stats
         setStats({
@@ -71,6 +107,20 @@ function Monitoring() {
           totalTags,
           messagesPerHour
         });
+
+        // Update advanced stats
+        setAdvancedStats(processAdvancedStats(allMessages));
+
+        // Update time series data
+        const timeData = allMessages.reduce((acc: any[], msg) => {
+          const hour = new Date(msg.timestamp).getHours();
+          const existing = acc.find(d => d.hour === hour);
+          if (existing) existing.count++;
+          else acc.push({ hour, count: 1 });
+          return acc;
+        }, []);
+        
+        setTimeSeriesData(timeData.sort((a, b) => a.hour - b.hour));
 
         // Update recent messages
         setRecentMessages(allMessages.slice(0, 5));
@@ -83,6 +133,8 @@ function Monitoring() {
         });
         setRecentMessages([]);
       }
+
+      setLastRefresh(new Date());
     } catch (error) {
       console.error('Error fetching data:', error);
       setError(error instanceof Error ? error.message : 'An error occurred while fetching data');
@@ -91,32 +143,41 @@ function Monitoring() {
     }
   };
 
+  // Add effect to refetch data when timeRange changes
   useEffect(() => {
-    // Initial fetch
     fetchData();
+  }, [timeRange]);
 
-    // Set up Supabase real-time subscription
-    const subscription = supabase
-      .channel('messages_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'messages'
-        },
-        async () => {
-          // Fetch updated data when changes occur
-          await fetchData();
+  // Add auto-refresh logic
+  useEffect(() => {
+    let progressInterval: NodeJS.Timeout;
+    let refreshTimeout: NodeJS.Timeout;
+
+    if (refreshInterval > 0) {
+      refreshTimeout = setTimeout(() => {
+        fetchData();
+      }, refreshInterval * 1000);
+
+      // Show progress bar
+      setShowRefreshProgress(true);
+      let progress = 0;
+      progressInterval = setInterval(() => {
+        progress += 1;
+        const progressBar = document.getElementById('refresh-progress');
+        if (progressBar) {
+          progressBar.style.width = `${(progress / refreshInterval) * 100}%`;
         }
-      )
-      .subscribe();
+        if (progress >= refreshInterval) {
+          setShowRefreshProgress(false);
+        }
+      }, 1000);
+    }
 
-    // Cleanup subscription
     return () => {
-      subscription.unsubscribe();
+      clearTimeout(refreshTimeout);
+      clearInterval(progressInterval);
     };
-  }, []);
+  }, [refreshInterval, lastRefresh]);
 
   const statCards = [
     {
@@ -145,11 +206,67 @@ function Monitoring() {
     }
   ];
 
+  const processAdvancedStats = (messages: any[]) => {
+    // Calculate message distribution by time of day
+    const distribution = messages.reduce((acc, msg) => {
+      const hour = new Date(msg.timestamp).getHours();
+      if (hour >= 5 && hour < 12) acc.morning++;
+      else if (hour >= 12 && hour < 17) acc.afternoon++;
+      else if (hour >= 17 && hour < 22) acc.evening++;
+      else acc.night++;
+      return acc;
+    }, { morning: 0, afternoon: 0, evening: 0, night: 0 });
+
+    // Calculate peak hour
+    const hourCounts = new Array(24).fill(0);
+    messages.forEach(msg => {
+      const hour = new Date(msg.timestamp).getHours();
+      hourCounts[hour]++;
+    });
+    const peakHour = hourCounts.indexOf(Math.max(...hourCounts));
+
+    // Calculate average message length
+    const avgLength = messages.reduce((acc, msg) => 
+      acc + (msg.content?.length || 0), 0) / messages.length;
+
+    // Get top tags
+    const tagCount = messages.reduce((acc: {[key: string]: number}, msg) => {
+      (msg.tags || []).forEach((tag: string) => {
+        acc[tag] = (acc[tag] || 0) + 1;
+      });
+      return acc;
+    }, {});
+    
+    const topTags = Object.entries(tagCount)
+      .sort(([,a], [,b]) => b - a)
+      .slice(0, 5)
+      .map(([tag]) => tag);
+
+    // Calculate user retention (users who sent multiple messages)
+    const userMessageCounts = messages.reduce((acc: {[key: string]: number}, msg) => {
+      acc[msg.username] = (acc[msg.username] || 0) + 1;
+      return acc;
+    }, {});
+    
+    const returningUsers = Object.values(userMessageCounts).filter(count => count > 1).length;
+    const totalUsers = Object.keys(userMessageCounts).length;
+    const retention = totalUsers ? (returningUsers / totalUsers) * 100 : 0;
+
+    return {
+      peakHour: `${peakHour.toString().padStart(2, '0')}:00`,
+      averageMessageLength: Math.round(avgLength),
+      topTags,
+      userRetention: Math.round(retention),
+      activeUsers24h: totalUsers,
+      messageDistribution: distribution
+    };
+  };
+
   return (
     <div className={`min-h-screen overflow-x-hidden ${darkMode ? 'dark bg-[#1a1a1a]' : 'bg-[#ffde59]'}`}>
       <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8 sm:py-12">
         {/* Navigation Buttons */}
-       <div className="flex flex-wrap items-center gap-4 mb-8">
+        <div className="flex flex-wrap items-center gap-4 mb-8">
           <Link
             to="/"
             className="brutal-button inline-flex items-center gap-2"
@@ -212,6 +329,83 @@ function Monitoring() {
               <List className="w-5 h-5" />
             </button>
           </div>
+        </div>
+
+        {/* Time Range Controls with responsive design */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          {/* Time Range Selector */}
+          <div className="brutal-card p-2 w-full sm:w-auto">
+            <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">Time Range:</div>
+            <div className="grid grid-cols-2 sm:flex sm:inline-flex gap-1">
+              {timeRangeOptions.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setTimeRange(option.value)}
+                  className={`brutal-button px-3 py-1.5 text-sm transition-colors w-full sm:w-auto ${
+                    timeRange === option.value 
+                      ? 'bg-[#ff5757] text-white hover:bg-[#ff4444]' 
+                      : 'hover:bg-gray-100 dark:hover:bg-gray-800'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Refresh Controls */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-4 w-full sm:w-auto">
+            <select
+              value={refreshInterval}
+              onChange={(e) => setRefreshInterval(Number(e.target.value))}
+              className="brutal-button px-3 py-1.5 w-full sm:w-auto text-sm"
+            >
+              <option value="0">Manual Refresh</option>
+              <option value="30">30 seconds</option>
+              <option value="60">1 minute</option>
+              <option value="300">5 minutes</option>
+            </select>
+
+            <button
+              onClick={() => fetchData()}
+              className="brutal-button inline-flex items-center justify-center gap-2 px-3 py-1.5 w-full sm:w-auto text-sm"
+            >
+              <RefreshCw className="w-4 h-4" />
+              Refresh Now
+            </button>
+          </div>
+        </div>
+
+        {/* Add Refresh Progress Bar */}
+        {showRefreshProgress && (
+          <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-4 sm:mb-6 overflow-hidden">
+            <div
+              id="refresh-progress"
+              className="h-full bg-[#ff5757] transition-all duration-1000 ease-linear"
+              style={{ width: '0%' }}
+            />
+          </div>
+        )}
+
+        {/* Status Indicators with responsive spacing */}
+        <div className="space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between mb-4 sm:mb-6">
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Last refreshed: {lastRefresh.toLocaleTimeString()}
+          </div>
+          <div className="text-sm text-gray-600 dark:text-gray-400">
+            Showing data for: {timeRangeOptions.find(opt => opt.value === timeRange)?.label}
+          </div>
+        </div>
+
+        {/* Advanced Analytics Toggle - Moved here */}
+        <div className="mb-6">
+          <button
+            onClick={() => setShowAdvancedStats(!showAdvancedStats)}
+            className="brutal-button inline-flex items-center gap-2"
+          >
+            <Zap className={`w-5 h-5 ${showAdvancedStats ? 'text-[#ff5757]' : ''}`} />
+            {showAdvancedStats ? 'Hide Advanced Analytics' : 'Show Advanced Analytics'}
+          </button>
         </div>
 
         {/* Stats Display */}
@@ -277,6 +471,87 @@ function Monitoring() {
           </div>
         )}
 
+        {/* Advanced Analytics Section - Remove button from here */}
+        {showAdvancedStats && (
+          <div className="mt-12 space-y-6">
+            {/* Message Distribution */}
+            <div className="brutal-card">
+              <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${
+                darkMode ? 'text-white' : 'text-black'
+              }`}>
+                <MessageCircle className="w-5 h-5 text-[#ff5757]" />
+                Message Distribution
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {Object.entries(advancedStats.messageDistribution).map(([time, count]) => (
+                  <div key={time} className="text-center">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 capitalize">
+                      {time}
+                    </div>
+                    <div className={`text-2xl font-bold ${
+                      darkMode ? 'text-white' : 'text-black'
+                    }`}>
+                      {count}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* User Engagement */}
+            <div className="brutal-card">
+              <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${
+                darkMode ? 'text-white' : 'text-black'
+              }`}>
+                <Users2 className="w-5 h-5 text-[#ff5757]" />
+                User Engagement
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    User Retention Rate
+                  </p>
+                  <p className={`text-2xl font-bold ${
+                    darkMode ? 'text-white' : 'text-black'
+                  }`}>
+                    {advancedStats.userRetention}%
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Active Users (24h)
+                  </p>
+                  <p className={`text-2xl font-bold ${
+                    darkMode ? 'text-white' : 'text-black'
+                  }`}>
+                    {advancedStats.activeUsers24h}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Trending Tags */}
+            <div className="brutal-card">
+              <h3 className={`text-lg font-bold mb-4 flex items-center gap-2 ${
+                darkMode ? 'text-white' : 'text-black'
+              }`}>
+                <Hash className="w-5 h-5 text-[#ff5757]" />
+                Trending Tags
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {advancedStats.topTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="brutal-button bg-[#ff5757] text-white px-3 py-1.5"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Activity Timeline */}
         <div className="mt-12">
           <h2 className={`text-2xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-black'}`}>
@@ -328,7 +603,7 @@ function Monitoring() {
 
         {/* About Modal */}
         {showAboutModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
             <div className={`brutal-card w-full max-w-lg relative ${darkMode ? 'bg-[#2a2a2a]' : 'bg-white'}`}>
               {/* Close button */}
               <button
@@ -408,4 +683,8 @@ function Monitoring() {
 }
 
 export default Monitoring;
+
+
+
+
 
