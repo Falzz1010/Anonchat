@@ -3,7 +3,7 @@ import { MessageSquare, Sun, Moon, Search, TrendingUp, Activity, Clock, History 
 import MessageList from './components/MessageList';
 import MessageInput from './components/MessageInput';
 import Sidebar from './components/Sidebar';
-import Header from './components/Header';
+import Header from './components/Header';  
 import Footer from './components/Footer';
 import PopularTags from './components/PopularTags';  
 import { useTheme } from './contexts/ThemeContext';
