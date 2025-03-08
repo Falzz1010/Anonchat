@@ -5,7 +5,7 @@ import MessageInput from './components/MessageInput';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import PopularTags from './components/PopularTags';
+import PopularTags from './components/PopularTags';  
 import { useTheme } from './contexts/ThemeContext';
 import { MessageProvider } from './contexts/MessageContext';
 import { BrowserRouter, Routes, Route, Link } from 'react-router-dom';  
