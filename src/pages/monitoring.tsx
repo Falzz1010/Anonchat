@@ -5,7 +5,6 @@ import { useTheme } from '../contexts/ThemeContext';
 import { Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 
-
 function Monitoring() {
   const { darkMode } = useTheme();
   const [showAboutModal, setShowAboutModal] = useState(false);
