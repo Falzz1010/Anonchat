@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { MessageSquare, Sun, Moon, Search, TrendingUp, Activity, Clock, History } from 'lucide-react';
-import MessageList from './components/MessageList';
+import MessageList from './components/MessageList'; 
 import MessageInput from './components/MessageInput';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';  
